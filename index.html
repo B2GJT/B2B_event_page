@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>이벤트</title>
+<title>데이원아카이브 이벤트</title>
 <style>
   :root {
     --bg: #f0f1f3;
@@ -18,22 +18,67 @@
     background: var(--bg);
     font-family: "Pretendard", -apple-system, "Malgun Gothic", sans-serif;
     color: var(--text-main);
-    padding: 48px 24px 100px;
+    padding: 0 24px 100px;
   }
   .wrap { max-width: 1040px; margin: 0 auto; }
 
-  /* 상단 페이지 헤더 */
-  .page-header { margin-bottom: 32px; }
-  .page-header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    margin: 0 0 6px;
+  /* ===== 히어로 헤더 ===== */
+  .hero {
+    position: relative;
+    margin: 0 -24px 40px;
+    padding: 64px 24px 56px;
+    background: linear-gradient(135deg, #4f5cff 0%, #6d5bff 45%, #a855f7 100%);
+    overflow: hidden;
+    text-align: center;
+  }
+  .hero-inner { position: relative; z-index: 3; }
+  .hero-eyebrow {
+    display: inline-block;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: 34px;
+    font-weight: 900;
+    color: #fff;
     letter-spacing: -0.5px;
   }
-  .page-header p {
+  .hero h1 span {
+    display: inline-block;
+    animation: bounce 1.8s ease-in-out infinite;
+  }
+  .hero p {
     margin: 0;
-    font-size: 14px;
-    color: var(--text-sub);
+    font-size: 15px;
+    color: rgba(255,255,255,0.88);
+    font-weight: 500;
+  }
+  .hero p strong {
+    color: #ffe066;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-8deg); }
+  }
+
+  /* 스파크 장식 */
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    z-index: 2;
+    animation: burst 2.6s ease-out infinite;
+  }
+  @keyframes burst {
+    0%   { transform: scale(0); opacity: 0; }
+    15%  { transform: scale(1); opacity: 1; }
+    60%  { transform: scale(1.4); opacity: 0.4; }
+    100% { transform: scale(1.8); opacity: 0; }
   }
 
   /* 탭 */
@@ -129,6 +174,30 @@
     filter: grayscale(70%) brightness(0.75);
   }
   .event-card.ended:hover { transform: none; }
+
+  /* 종료 도장 */
+  .stamp {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    border: 3px solid #ff4d4f;
+    color: #ff4d4f;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .stamp::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid #ff4d4f;
+    border-radius: 5px;
+  }
   .event-title {
     margin: 14px 2px 4px;
     font-size: 17px;
@@ -150,12 +219,24 @@
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="page-header">
-    <h1>이벤트</h1>
-    <p>지금 참여할 수 있는 이벤트와 지난 이벤트를 확인해보세요</p>
+  <!-- ===== 히어로 헤더 ===== -->
+  <div class="hero">
+    <div class="confetti">
+      <span class="spark" style="width:8px; height:8px; left:20%; top:20%; animation-delay:.3s;"></span>
+      <span class="spark" style="width:10px; height:10px; left:75%; top:15%; animation-delay:1.1s;"></span>
+      <span class="spark" style="width:6px; height:6px; left:50%; top:35%; animation-delay:.8s;"></span>
+      <span class="spark" style="width:9px; height:9px; left:88%; top:40%; animation-delay:1.6s;"></span>
+      <span class="spark" style="width:7px; height:7px; left:10%; top:45%; animation-delay:2s;"></span>
+    </div>
+    <div class="hero-inner">
+      <span class="hero-eyebrow">🔥 EVENT PAGE</span>
+      <h1><span>🎉</span> 데이원아카이브 이벤트 <span>🎉</span></h1>
+      <p>지금 <strong>참여하고 혜택</strong>을 받아가세요!</p>
+    </div>
   </div>
+
+<div class="wrap">
 
   <div class="tabs">
     <button class="tab-btn active" data-target="ongoing">진행중인 이벤트</button>
@@ -167,13 +248,13 @@
     <div class="ongoing-grid">
 
       <a class="event-card" href="./events/sample-ongoing-1.html">
-        <div class="event-banner" style="background-image:url('banner-ongoing-1.png');"></div>
+        <div class="event-banner" style="background-image:url('./images/banner-ongoing-1.png');"></div>
         <p class="event-title">빙고판에 맞춰 만드는 나만의 커리큘럼</p>
         <p class="event-date">2026.09.01~2026.10.31</p>
       </a>
 
       <a class="event-card" href="./events/sample-ongoing-2.html">
-        <div class="event-banner" style="background-image:url('banner-ongoing-2.png');"></div>
+        <div class="event-banner" style="background-image:url('./images/banner-ongoing-2.png');"></div>
         <p class="event-title">설문조사 참여하고 커피쿠폰 받자!</p>
         <p class="event-date">2026.09.10~2026.11.30</p>
       </a>
@@ -189,13 +270,17 @@
     <div class="event-grid">
 
       <a class="event-card ended" href="./events/2024-jobprep.html">
-        <div class="event-banner" style="background-image:url('./images/banner-jobprep.jpg');"></div>
+        <div class="event-banner" style="background-image:url('./images/banner-jobprep.jpg');">
+          <span class="stamp">종료된 이벤트입니다</span>
+        </div>
         <p class="event-title">내일은 원래 무료다</p>
         <p class="event-date">2024.04.25~2024.07.24</p>
       </a>
 
       <a class="event-card ended" href="./events/2024-ai-starter.html">
-        <div class="event-banner" style="background-image:url('./images/banner-ai-starter.jpg');"></div>
+        <div class="event-banner" style="background-image:url('./images/banner-ai-starter.jpg');">
+          <span class="stamp">종료된 이벤트입니다</span>
+        </div>
         <p class="event-title">AI 스타터패키지</p>
         <p class="event-date">2024.06.25~2024.06.27</p>
       </a>
