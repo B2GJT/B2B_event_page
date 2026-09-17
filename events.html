@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이벤트</title>
+<style>
+  :root {
+    --bg: #f0f1f3;
+    --text-main: #1a1a1a;
+    --text-sub: #8a8f98;
+    --accent: #4f5cff;
+    --card-radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "Pretendard", -apple-system, "Malgun Gothic", sans-serif;
+    color: var(--text-main);
+    padding: 48px 24px 100px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  /* 상단 페이지 헤더 */
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .page-header p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-sub);
+  }
+
+  /* 탭 */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 36px;
+    border-bottom: 1px solid #dcdde1;
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    position: relative;
+    padding: 12px 4px;
+    margin-right: 22px;
+    border: none;
+    background: none;
+    color: var(--text-sub);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-btn::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: var(--text-main);
+    opacity: 0;
+    transform: scaleX(0.6);
+    transition: opacity .15s, transform .15s;
+  }
+  .tab-btn.active { color: var(--text-main); }
+  .tab-btn.active::after { opacity: 1; transform: scaleX(1); }
+
+  /* 섹션 */
+  .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 18px;
+  }
+  .event-section { display: none; }
+  .event-section.active {
+    display: block;
+    animation: fadeIn .25s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 진행중 이벤트 - 종료 이벤트와 동일한 2열 그리드 */
+  .ongoing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .ongoing-grid .event-banner {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+
+  /* 배너 그리드 (종료 이벤트 등 2열) */
+  .event-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .event-grid, .ongoing-grid { grid-template-columns: 1fr; }
+  }
+
+  .event-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform .18s ease;
+  }
+  .event-card:hover { transform: translateY(-4px); }
+  .event-banner {
+    width: 100%;
+    aspect-ratio: 16 / 8.5;
+    border-radius: var(--card-radius);
+    background-size: cover;
+    background-position: center;
+    background-color: #111; /* 이미지 로딩 전/실패 시 배경 */
+    overflow: hidden;
+    position: relative;
+    transition: box-shadow .18s ease;
+  }
+  .event-card:hover .event-banner {
+    box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+  }
+  .event-card.ended .event-banner {
+    filter: grayscale(70%) brightness(0.75);
+  }
+  .event-card.ended:hover { transform: none; }
+  .event-title {
+    margin: 14px 2px 4px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .event-date {
+    margin: 0 2px;
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+
+  /* 빈 상태 */
+  .empty-state {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-sub);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-header">
+    <h1>이벤트</h1>
+    <p>지금 참여할 수 있는 이벤트와 지난 이벤트를 확인해보세요</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-target="ongoing">진행중인 이벤트</button>
+    <button class="tab-btn" data-target="ended">종료된 이벤트</button>
+  </div>
+
+  <!-- 진행중인 이벤트 -->
+  <section id="ongoing" class="event-section active">
+    <div class="ongoing-grid">
+
+      <a class="event-card" href="./events/sample-ongoing-1.html">
+        <div class="event-banner" style="background-image:url('./images/banner-ongoing-1.png');"></div>
+        <p class="event-title">빙고판에 맞춰 만드는 나만의 커리큘럼</p>
+        <p class="event-date">2026.09.01~2026.10.31</p>
+      </a>
+
+      <a class="event-card" href="./events/sample-ongoing-2.html">
+        <div class="event-banner" style="background-image:url('./images/banner-ongoing-2.png');"></div>
+        <p class="event-title">설문조사 참여하고 커피쿠폰 받자!</p>
+        <p class="event-date">2026.09.10~2026.11.30</p>
+      </a>
+
+      <!-- 진행중 이벤트 없을 때는 위 <a> 블록 지우고 아래 한 줄만 남기기 -->
+      <!-- <div class="empty-state">현재 진행중인 이벤트가 없습니다</div> -->
+
+    </div>
+  </section>
+
+  <!-- 종료된 이벤트 -->
+  <section id="ended" class="event-section">
+    <div class="event-grid">
+
+      <a class="event-card ended" href="./events/2024-jobprep.html">
+        <div class="event-banner" style="background-image:url('./images/banner-jobprep.jpg');"></div>
+        <p class="event-title">내일은 원래 무료다</p>
+        <p class="event-date">2024.04.25~2024.07.24</p>
+      </a>
+
+      <a class="event-card ended" href="./events/2024-ai-starter.html">
+        <div class="event-banner" style="background-image:url('./images/banner-ai-starter.jpg');"></div>
+        <p class="event-title">AI 스타터패키지</p>
+        <p class="event-date">2024.06.25~2024.06.27</p>
+      </a>
+
+      <!-- 카드 하나 = <a class="event-card ended"> 통째로 복사해서 이미지/제목/날짜/링크만 교체 -->
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.event-section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
