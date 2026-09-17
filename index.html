@@ -57,15 +57,20 @@
     color: rgba(255,255,255,0.88);
     font-weight: 500;
   }
-  .hero p strong {
-    color: #ffe066;
-  }
+  .hero p strong { color: #ffe066; }
   @keyframes bounce {
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-6px) rotate(-8deg); }
   }
 
   /* 스파크 장식 */
+  .confetti {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
   .spark {
     position: absolute;
     border-radius: 50%;
@@ -114,11 +119,6 @@
   .tab-btn.active::after { opacity: 1; transform: scaleX(1); }
 
   /* 섹션 */
-  .section-title {
-    font-size: 20px;
-    font-weight: 800;
-    margin: 0 0 18px;
-  }
   .event-section { display: none; }
   .event-section.active {
     display: block;
@@ -129,24 +129,14 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* 진행중 이벤트 - 종료 이벤트와 동일한 2열 그리드 */
-  .ongoing-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-  .ongoing-grid .event-banner {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  }
-
-  /* 배너 그리드 (종료 이벤트 등 2열) */
+  /* 카드 그리드 (진행중/종료 공통 2열) */
   .event-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
   @media (max-width: 640px) {
-    .event-grid, .ongoing-grid { grid-template-columns: 1fr; }
+    .event-grid { grid-template-columns: 1fr; }
   }
 
   .event-card {
@@ -162,18 +152,19 @@
     border-radius: var(--card-radius);
     background-size: cover;
     background-position: center;
-    background-color: #111; /* 이미지 로딩 전/실패 시 배경 */
+    background-color: #111;
     overflow: hidden;
     position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     transition: box-shadow .18s ease;
   }
   .event-card:hover .event-banner {
     box-shadow: 0 10px 22px rgba(0,0,0,0.16);
   }
-  .event-card.ended .event-banner {
-    filter: grayscale(70%) brightness(0.75);
-  }
+  .event-card.ended .event-banner { filter: grayscale(70%) brightness(0.75); }
   .event-card.ended:hover { transform: none; }
+  .event-title { margin: 14px 2px 4px; font-size: 17px; font-weight: 700; }
+  .event-date { margin: 0 2px; font-size: 13px; color: var(--text-sub); }
 
   /* 종료 도장 */
   .stamp {
@@ -198,19 +189,17 @@
     border: 1px solid #ff4d4f;
     border-radius: 5px;
   }
-  .event-title {
-    margin: 14px 2px 4px;
-    font-size: 17px;
-    font-weight: 700;
-  }
-  .event-date {
-    margin: 0 2px;
-    font-size: 13px;
-    color: var(--text-sub);
-  }
 
   /* 빈 상태 */
   .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-sub);
+    font-size: 14px;
+  }
+  .loading-state {
+    grid-column: 1 / -1;
     text-align: center;
     padding: 60px 0;
     color: var(--text-sub);
@@ -220,7 +209,6 @@
 </head>
 <body>
 
-  <!-- ===== 히어로 헤더 ===== -->
   <div class="hero">
     <div class="confetti">
       <span class="spark" style="width:8px; height:8px; left:20%; top:20%; animation-delay:.3s;"></span>
@@ -243,56 +231,111 @@
     <button class="tab-btn" data-target="ended">종료된 이벤트</button>
   </div>
 
-  <!-- 진행중인 이벤트 -->
   <section id="ongoing" class="event-section active">
-    <div class="ongoing-grid">
-
-      <a class="event-card" href="./events/sample-ongoing-1.html">
-        <div class="event-banner" style="background-image:url('banner-ongoing-1.png');"></div>
-        <p class="event-title">빙고판에 맞춰 만드는 나만의 커리큘럼</p>
-        <p class="event-date">2026.09.01~2026.10.31</p>
-      </a>
-
-      <a class="event-card" href="./events/sample-ongoing-2.html">
-        <div class="event-banner" style="background-image:url('banner-ongoing-2.png');"></div>
-        <p class="event-title">설문조사 참여하고 커피쿠폰 받자!</p>
-        <p class="event-date">2026.09.10~2026.11.30</p>
-      </a>
-
-      <!-- 진행중 이벤트 없을 때는 위 <a> 블록 지우고 아래 한 줄만 남기기 -->
-      <!-- <div class="empty-state">현재 진행중인 이벤트가 없습니다</div> -->
-
+    <div class="event-grid" id="ongoingGrid">
+      <div class="loading-state">불러오는 중...</div>
     </div>
   </section>
 
-  <!-- 종료된 이벤트 -->
   <section id="ended" class="event-section">
-    <div class="event-grid">
-
-      <a class="event-card ended" href="./events/2024-jobprep.html">
-        <div class="event-banner" style="background-image:url('./images/banner-jobprep.jpg');">
-          <span class="stamp">종료된 이벤트입니다</span>
-        </div>
-        <p class="event-title">내일은 원래 무료다</p>
-        <p class="event-date">2024.04.25~2024.07.24</p>
-      </a>
-
-      <a class="event-card ended" href="./events/2024-ai-starter.html">
-        <div class="event-banner" style="background-image:url('./images/banner-ai-starter.jpg');">
-          <span class="stamp">종료된 이벤트입니다</span>
-        </div>
-        <p class="event-title">AI 스타터패키지</p>
-        <p class="event-date">2024.06.25~2024.06.27</p>
-      </a>
-
-      <!-- 카드 하나 = <a class="event-card ended"> 통째로 복사해서 이미지/제목/날짜/링크만 교체 -->
-
+    <div class="event-grid" id="endedGrid">
+      <div class="loading-state">불러오는 중...</div>
     </div>
   </section>
 
 </div>
 
 <script>
+  /*
+    ===== 구글 시트 연동 설정 =====
+    1. 구글 시트 헤더: title, date, end_date, image, link
+       - date: 화면에 보여줄 기간 텍스트 (예: 2026.09.01~2026.10.31)
+       - end_date: 자동 종료 판단용 실제 종료일, 반드시 YYYY-MM-DD 형식 (예: 2026-10-31)
+    2. 시트 공유 설정에서 "링크가 있는 모든 사용자 - 뷰어"로 되어 있어야 함
+       (공유 버튼 > 일반 액세스 > "링크가 있는 모든 사용자"로 변경)
+    → end_date가 오늘 지나면 자동으로 종료된 이벤트로 넘어감
+  */
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vCC0rmlqnjA5VUyXKZ1ppfquK9moodNJCEKmpbi-ypc/export?format=csv&gid=0";
+
+  // 쉼표 안에 따옴표로 감싼 값이 있어도 안전하게 나누는 간단 CSV 파서
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i + 1] === '\n') i++;
+          row.push(field); field = '';
+          if (row.some(v => v !== '')) rows.push(row);
+          row = [];
+        } else field += c;
+      }
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function rowsToEvents(rows) {
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const idx = k => header.indexOf(k);
+    return rows.slice(1)
+      .filter(r => r.length > 1 && r[idx('title')])
+      .map(r => ({
+        title: r[idx('title')] || '',
+        date: r[idx('date')] || '',
+        endDate: (r[idx('end_date')] || '').trim(),
+        image: r[idx('image')] || '',
+        link: r[idx('link')] || '#'
+      }));
+  }
+
+  // end_date(YYYY-MM-DD)가 오늘보다 지났으면 자동으로 종료 처리
+  function isEventEnded(event) {
+    if (!event.endDate) return false;
+    const end = new Date(event.endDate + 'T23:59:59');
+    return end.getTime() < Date.now();
+  }
+
+  function renderCard(event, isEnded) {
+    const stamp = isEnded ? '<span class="stamp">종료된 이벤트입니다</span>' : '';
+    return `
+      <a class="event-card${isEnded ? ' ended' : ''}" href="${event.link}">
+        <div class="event-banner" style="background-image:url('${event.image}');">${stamp}</div>
+        <p class="event-title">${event.title}</p>
+        <p class="event-date">${event.date}</p>
+      </a>`;
+  }
+
+  function renderList(containerId, list, isEnded) {
+    const el = document.getElementById(containerId);
+    if (!list || list.length === 0) {
+      el.innerHTML = `<div class="empty-state">표시할 이벤트가 없습니다</div>`;
+      return;
+    }
+    el.innerHTML = list.map(e => renderCard(e, isEnded)).join('');
+  }
+
+  fetch(SHEET_CSV_URL)
+    .then(res => res.text())
+    .then(text => {
+      const events = rowsToEvents(parseCSV(text));
+      renderList('ongoingGrid', events.filter(e => !isEventEnded(e)), false);
+      renderList('endedGrid', events.filter(e => isEventEnded(e)), true);
+    })
+    .catch(() => {
+      document.getElementById('ongoingGrid').innerHTML =
+        `<div class="empty-state">시트를 불러오지 못했습니다. SHEET_CSV_URL 주소를 확인해주세요.</div>`;
+      document.getElementById('endedGrid').innerHTML = '';
+    });
+
+  // 탭 전환
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
