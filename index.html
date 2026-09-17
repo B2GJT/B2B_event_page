@@ -255,7 +255,7 @@
        (공유 버튼 > 일반 액세스 > "링크가 있는 모든 사용자"로 변경)
     → end_date가 오늘 지나면 자동으로 종료된 이벤트로 넘어감
   */
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vCC0rmlqnjA5VUyXKZ1ppfquK9moodNJCEKmpbi-ypc/export?format=csv&gid=0";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vCC0rmlqnjA5VUyXKZ1ppfquK9moodNJCEKmpbi-ypc/gviz/tq?tqx=out:csv&gid=0";
 
   // 쉼표 안에 따옴표로 감싼 값이 있어도 안전하게 나누는 간단 CSV 파서
   function parseCSV(text) {
@@ -296,10 +296,23 @@
       }));
   }
 
-  // end_date(YYYY-MM-DD)가 오늘보다 지났으면 자동으로 종료 처리
+  // end_date를 다양한 표기(2026-10-31 / 2026.10.31 / 2026/10/31)로 적어도 인식
+  function parseFlexibleDate(str) {
+    if (!str) return null;
+    const cleaned = str.trim().replace(/[./]/g, '-').replace(/\s+/g, '').replace(/-+$/, '');
+    const parts = cleaned.split('-').filter(Boolean).map(p => parseInt(p, 10));
+    if (parts.length !== 3 || parts.some(isNaN)) return null;
+    let [a, b, c] = parts;
+    let y, m, d;
+    if (a > 31) { y = a; m = b; d = c; }       // YYYY-MM-DD
+    else if (c > 31) { y = c; m = a; d = b; }  // MM-DD-YYYY
+    else return null;
+    return new Date(y, m - 1, d, 23, 59, 59);
+  }
+
   function isEventEnded(event) {
-    if (!event.endDate) return false;
-    const end = new Date(event.endDate + 'T23:59:59');
+    const end = parseFlexibleDate(event.endDate);
+    if (!end) return false;
     return end.getTime() < Date.now();
   }
 
@@ -329,9 +342,10 @@
       renderList('ongoingGrid', events.filter(e => !isEventEnded(e)), false);
       renderList('endedGrid', events.filter(e => isEventEnded(e)), true);
     })
-    .catch(() => {
+    .catch(err => {
+      console.error('시트 로딩 실패:', err);
       document.getElementById('ongoingGrid').innerHTML =
-        `<div class="empty-state">시트를 불러오지 못했습니다. SHEET_CSV_URL 주소를 확인해주세요.</div>`;
+        `<div class="empty-state">시트를 불러오지 못했습니다. 시트 공유 설정(링크가 있는 모든 사용자)을 확인해주세요.</div>`;
       document.getElementById('endedGrid').innerHTML = '';
     });
 
