@@ -146,6 +146,46 @@
 
   .hero-hint { color: #6A4FA0; font-size: 13px; font-weight: 700; z-index: 3; min-height: 18px; transition: opacity 0.3s ease; margin: 2px 0 12px; position: relative; }
   .hero-hint.faded { opacity: 0; }
+
+  .survey-card {
+    z-index: 3; position: relative;
+    display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+    margin: 8px 0 16px;
+    width: min(88vw, 340px);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 20px;
+    padding: 20px 20px 22px;
+    box-shadow: 0 10px 24px rgba(90,50,150,0.14);
+  }
+  .survey-title { margin: 0; font-size: 15px; font-weight: 800; color: #4A2A9E; text-align: center; }
+  .survey-field label { display: block; font-size: 12px; font-weight: 700; color: #6A4FA0; margin-bottom: 5px; }
+  .survey-field input[type="text"], .survey-field input[type="tel"] {
+    width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid rgba(120,80,180,0.3);
+    background: rgba(255,255,255,0.85); font-size: 14px; outline: none; box-sizing: border-box;
+  }
+  .survey-field input:focus { border-color: #8F63F2; }
+  .photo-upload {
+    display: flex; align-items: center; gap: 10px;
+    border: 1.5px dashed rgba(120,80,180,0.4); border-radius: 12px;
+    padding: 10px 12px; cursor: pointer; background: rgba(255,255,255,0.5);
+  }
+  .photo-upload input { display: none; }
+  .photo-preview { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; display: none; background: #eee; }
+  .photo-upload-text { font-size: 12.5px; color: #6A4FA0; font-weight: 700; flex: 1; }
+  .survey-submit-btn {
+    margin-top: 4px; padding: 13px; border-radius: 999px; border: none; cursor: pointer;
+    background: #4A2A9E; color: #fff; font-weight: 800; font-size: 14px;
+    transition: opacity 0.2s ease;
+  }
+  .survey-submit-btn:disabled { opacity: 0.5; cursor: default; }
+  .status-msg {
+    z-index: 3; position: relative;
+    font-size: 13px; font-weight: 700; color: #D6336C;
+    margin: 8px 0 0; min-height: 18px; opacity: 0; transition: opacity 0.25s ease;
+  }
+  .status-msg.show { opacity: 1; }
   .done-note { color: #8A7AB8; font-size: 12px; margin: 10px 0 0; opacity: 0; transition: opacity 0.4s ease; z-index: 3; position: relative; }
   .done-note.show { opacity: 1; }
 
@@ -428,7 +468,30 @@
   </div>
 
   <p class="hero-hint" id="heroHint">'시작하기'를 눌러 상자 하나를 뽑아보세요 <br>상품은 일정한 비율에 따라 부여됩니다.<br> </p>
-  <button class="start-btn" id="startBtn">시작하기</button>
+
+  <div class="survey-card" id="keyGate" style="display:none;">
+    <p class="survey-title">참여 전 잠깐! 정보를 입력해주세요</p>
+    <div class="survey-field">
+      <label for="surveyName">이름</label>
+      <input type="text" id="surveyName" placeholder="홍길동">
+    </div>
+    <div class="survey-field">
+      <label for="surveyPhone">연락처</label>
+      <input type="tel" id="surveyPhone" placeholder="010-0000-0000">
+    </div>
+    <div class="survey-field">
+      <label>사진 첨부</label>
+      <label class="photo-upload" for="surveyPhoto">
+        <img class="photo-preview" id="photoPreview" alt="">
+        <span class="photo-upload-text" id="photoUploadText">탭해서 사진 선택</span>
+        <input type="file" id="surveyPhoto" accept="image/*" capture="environment">
+      </label>
+    </div>
+    <button class="survey-submit-btn" id="surveySubmitBtn">제출하고 뽑기 참여하기</button>
+  </div>
+
+  <button class="start-btn" id="startBtn" style="display:none;">시작하기</button>
+  <p class="status-msg" id="statusMsg"></p>
   <p class="done-note" id="doneNote">오늘의 뽑기가 완료되었어요</p>
 </section>
 
@@ -505,22 +568,184 @@
     setTimeout(() => layer.remove(), 4200);
   }
 
+  // ====== Google Sheet 연동 설정 ======
+  // 아래에 배포한 Google Apps Script 웹앱 URL을 붙여넣어주세요.
+  const SHEET_WEBHOOK_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
   let used = false;
   let activeTier = null;
+  let participantKey = null;
   const machineWrap = document.getElementById('machineWrap');
   const clawGroup = document.getElementById('clawGroup');
   const dropBox = document.getElementById('dropBox');
   const heroHint = document.getElementById('heroHint');
   const startBtn = document.getElementById('startBtn');
+  const keyGate = document.getElementById('keyGate');
+  const surveyName = document.getElementById('surveyName');
+  const surveyPhone = document.getElementById('surveyPhone');
+  const surveyPhoto = document.getElementById('surveyPhoto');
+  const photoPreview = document.getElementById('photoPreview');
+  const photoUploadText = document.getElementById('photoUploadText');
+  const surveySubmitBtn = document.getElementById('surveySubmitBtn');
+  const statusMsg = document.getElementById('statusMsg');
 
-  startBtn.addEventListener('click', () => {
+  function showStatus(msg) {
+    statusMsg.textContent = msg;
+    statusMsg.classList.add('show');
+  }
+
+  function revealStartBtn() {
+    keyGate.style.display = 'none';
+    startBtn.style.display = 'inline-flex';
+  }
+
+  function generateKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'P' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // 사진을 캔버스로 리사이즈+압축해서 base64로 변환 (전송 용량을 줄이기 위함)
+  function compressImage(file, maxSize = 1000, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxSize) {
+            height = Math.round(height * (maxSize / width));
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = Math.round(width * (maxSize / height));
+            height = maxSize;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let compressedPhotoData = null;
+  surveyPhoto.addEventListener('change', async () => {
+    const file = surveyPhoto.files[0];
+    if (!file) return;
+    photoUploadText.textContent = '처리 중...';
+    compressedPhotoData = await compressImage(file);
+    photoPreview.src = compressedPhotoData;
+    photoPreview.style.display = 'block';
+    photoUploadText.textContent = file.name;
+  });
+
+  // key 확인: URL 파라미터(?key=...)가 있으면 왈라 등 외부 설문 경로로 간주하고 바로 시작 버튼 노출
+  // 없으면 이 페이지 자체 설문(이름/연락처/사진) 폼을 먼저 보여줌
+  (function resolveKey() {
+    const urlKey = new URLSearchParams(window.location.search).get('key');
+    if (urlKey) {
+      participantKey = urlKey;
+      revealStartBtn();
+    } else {
+      keyGate.style.display = 'flex';
+    }
+  })();
+
+  surveySubmitBtn.addEventListener('click', async () => {
+    const name = surveyName.value.trim();
+    const phone = surveyPhone.value.trim();
+    if (!name || !phone) {
+      showStatus('이름과 연락처를 입력해주세요');
+      return;
+    }
+    if (!compressedPhotoData) {
+      showStatus('사진을 첨부해주세요');
+      return;
+    }
+
+    surveySubmitBtn.disabled = true;
+    surveySubmitBtn.textContent = '제출 중...';
+    statusMsg.classList.remove('show');
+
+    // 클라이언트에서 만드는 key는 "이 제출 건"의 후보 key일 뿐, 실제로 쓸 key는
+    // 서버가 전화번호로 중복 여부를 확인한 뒤 응답으로 알려주는 값을 그대로 사용한다.
+    const candidateKey = generateKey();
+    try {
+      const res = await fetch(SHEET_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'submit', key: candidateKey, name, phone, photoBase64: compressedPhotoData })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        if (data.reason === 'already_drawn') {
+          showStatus('이 연락처로는 이미 뽑기까지 완료하셨어요.');
+        } else {
+          showStatus('제출에 실패했어요. 다시 시도해주세요.');
+        }
+        surveySubmitBtn.disabled = false;
+        surveySubmitBtn.textContent = '제출하고 뽑기 참여하기';
+        return;
+      }
+      // 서버가 내려준 key를 사용 (같은 번호로 재제출한 경우, 기존에 쓰던 key가 그대로 돌아온다)
+      participantKey = data.key || candidateKey;
+      revealStartBtn();
+    } catch (err) {
+      showStatus('연결에 문제가 있어요. 잠시 후 다시 시도해주세요.');
+      surveySubmitBtn.disabled = false;
+      surveySubmitBtn.textContent = '제출하고 뽑기 참여하기';
+    }
+  });
+
+  // 서버(Apps Script)에 뽑기 결과를 기록하고, 이미 참여한 key인지 확인
+  async function recordDraw(key, tier) {
+    try {
+      const res = await fetch(SHEET_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // preflight 회피용
+        body: JSON.stringify({ action: 'draw', key, rank: tier.label, prize: tier.prize })
+      });
+      const data = await res.json();
+      return data; // { ok: true } 또는 { ok: false, reason: 'duplicate' }
+    } catch (err) {
+      return { ok: false, reason: 'network' };
+    }
+  }
+
+  startBtn.addEventListener('click', async () => {
     if (used) return;
+    if (!participantKey) {
+      showStatus('참여코드를 먼저 확인해주세요');
+      return;
+    }
+
+    startBtn.disabled = true;
+    startBtn.textContent = '확인 중...';
+    statusMsg.classList.remove('show');
+
+    const pickedTier = weightedPick();
+    const result = await recordDraw(participantKey, pickedTier);
+
+    if (!result.ok) {
+      startBtn.disabled = false;
+      startBtn.textContent = '시작하기';
+      if (result.reason === 'duplicate') {
+        showStatus('이미 참여하셨어요. 참여는 1회만 가능합니다.');
+      } else {
+        showStatus('연결에 문제가 있어요. 잠시 후 다시 시도해주세요.');
+      }
+      return;
+    }
+
     used = true;
-    activeTier = weightedPick();
+    activeTier = pickedTier;
 
     machineWrap.classList.add('used');
     heroHint.classList.add('faded');
-    startBtn.disabled = true;
     startBtn.textContent = '뽑는 중...';
 
     // claw sequence: descend -> grip -> rise -> release into chute
