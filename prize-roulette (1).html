@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>행운의 선물상자 뽑기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD166;
+    --gold-deep: #C9860F;
+    --gold-light: #FFE9B0;
+    --card: #241454;
+    --card-line: rgba(255,255,255,0.12);
+    --ink-900: #1A0F3D;
+    --shadow-color: 260deg 45% 12%;
+  }
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    letter-spacing: -0.01em;
+  }
+
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding: 20px 16px 16px;
+    background:
+      radial-gradient(ellipse 90% 55% at 50% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 60%),
+      linear-gradient(165deg, #C7ECFF 0%, #DCEBFF 22%, #F1E4FF 48%, #FFDCF0 72%, #FFC9E8 100%);
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 120% 70% at 50% 45%, rgba(0,0,0,0) 55%, rgba(60,20,90,0.10) 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .grain {
+    position: absolute; inset: 0;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .bg-decor { position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none; }
+  .deco-circle { position: absolute; border-radius: 50%; filter: blur(1px); animation: decoFloat 7s ease-in-out infinite; }
+  .deco-circle.c1 { width: 130px; height: 130px; left: 4%; top: 8%; opacity: 0.55; background: radial-gradient(circle at 35% 30%, #FFF3D6, #FFD166 72%); animation-delay: 0s; }
+  .deco-circle.c2 { width: 64px; height: 64px; right: 8%; top: 16%; opacity: 0.6; background: radial-gradient(circle at 35% 30%, #FFE3F4, #FF8FCB 72%); animation-delay: 1.1s; }
+  .deco-circle.c3 { width: 40px; height: 40px; left: 12%; top: 46%; opacity: 0.55; background: radial-gradient(circle at 35% 30%, #F0E6FF, #B98CFF 72%); animation-delay: 2s; }
+  .deco-circle.c4 { width: 96px; height: 96px; right: 4%; bottom: 10%; opacity: 0.5; background: radial-gradient(circle at 35% 30%, #E1F6FF, #7EC8FF 72%); animation-delay: 0.6s; }
+  .deco-circle.c5 { width: 30px; height: 30px; right: 24%; top: 6%; opacity: 0.6; background: radial-gradient(circle at 35% 30%, #E3FFF6, #6EE7D0 72%); animation-delay: 1.7s; }
+  .deco-circle.c6 { width: 54px; height: 54px; left: 22%; bottom: 6%; opacity: 0.45; background: radial-gradient(circle at 35% 30%, #FFEAF6, #FF7AAE 72%); animation-delay: 2.6s; }
+  @keyframes decoFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-14px) scale(1.05); }
+  }
+
+
+  .top-bar { position: absolute; top: 18px; right: 16px; z-index: 6; }
+  .list-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.9);
+    color: #5b3fa8; font-size: 13px; font-weight: 800;
+    padding: 10px 19px; border-radius: 999px; cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 14px rgba(90,50,150,0.16), inset 0 1px 0 rgba(255,255,255,0.8);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .list-btn:hover { background: rgba(255,255,255,0.85); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(90,50,150,0.2); }
+  .list-btn:active { transform: translateY(0) scale(0.96); }
+
+  .hero-sub {
+    color: #A82BC4; font-size: 13px; font-weight: 800; letter-spacing: 0.4px;
+    margin: 4px 0 10px; z-index: 3; position: relative;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .hero-title-row { z-index: 3; position: relative; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 2px 8px; }
+  .hero-title-row .spark {
+    display: inline-block; font-size: clamp(22px, 5vw, 30px);
+    filter: drop-shadow(0 2px 6px rgba(255,150,80,0.35));
+    animation: sparkBounce 1.8s ease-in-out infinite;
+  }
+  .hero-title-row .spark.right { animation-delay: 0.35s; }
+  @keyframes sparkBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(10deg); }
+  }
+  .hero-title-row .pink,
+  .hero-title-row .purple {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(28px, 6.4vw, 42px);
+    line-height: 1.1;
+  }
+  .hero-title-row .pink {
+    color: #FF3FA0;
+    text-shadow: 0 3px 0 rgba(255,255,255,0.6), 0 1px 14px rgba(255,63,160,0.35);
+  }
+  .hero-title-row .purple {
+    background: linear-gradient(100deg, #7C3AED 0%, #C43FD8 45%, #FF3FA0 78%, #FFA63F 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 3px 0 rgba(255,255,255,0.55);
+  }
+
+  .machine-wrap {
+    position: relative;
+    height: min(66vh, 660px);
+    width: auto;
+    max-width: 98vw;
+    aspect-ratio: 320 / 370;
+    z-index: 3;
+    margin: 0 auto 4px;
+    filter: drop-shadow(0 24px 26px rgba(60,30,110,0.28));
+  }
+  .machine-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  .trigger-btn { pointer-events: none; }
+  .machine-wrap.used .trigger-glow { opacity: 0; }
+  .trigger-glow { animation: triggerPulse 1.5s ease-in-out infinite; }
+  @keyframes triggerPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
+
+  .claw-group { transition: transform 1s cubic-bezier(0.45, 0, 0.2, 1); transform: translateY(0); }
+  .claw-group.descend { transform: translateY(78px); }
+  .claw-group.rise { transform: translateY(-6px); }
+  .claw-prong { transition: transform 0.2s ease; transform-box: fill-box; transform-origin: top center; }
+  .claw-group.grip .claw-prong.left { transform: rotate(18deg); }
+  .claw-group.grip .claw-prong.right { transform: rotate(-18deg); }
+
+  .prize-grabbed { opacity: 0; transition: opacity 0.2s ease; }
+  .claw-group.grip .prize-grabbed { opacity: 1; }
+
+  .drop-box { transform-box: fill-box; transform-origin: center; transition: transform 0.75s cubic-bezier(0.36, 0.2, 0.3, 1.1); transform: scale(0.9); opacity: 0; }
+  .drop-box.falling { opacity: 1; transform: translate(0px, 82px) rotate(160deg) scale(0.95); }
+
+  .hero-hint { color: #6A4FA0; font-size: 13px; font-weight: 700; z-index: 3; min-height: 18px; transition: opacity 0.3s ease; margin: 2px 0 12px; position: relative; }
+  .hero-hint.faded { opacity: 0; }
+  .done-note { color: #8A7AB8; font-size: 12px; margin: 10px 0 0; opacity: 0; transition: opacity 0.4s ease; z-index: 3; position: relative; }
+  .done-note.show { opacity: 1; }
+
+  .start-btn {
+    position: relative; z-index: 3;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 38px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 15px;
+    color: #4A2A00;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
+    border: none; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 4px 0 var(--gold-deep), 0 12px 22px rgba(255,209,102,0.4);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.3s ease;
+  }
+  .start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--gold-deep), 0 16px 26px rgba(255,209,102,0.46); }
+  .start-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gold-deep); }
+  .start-btn:disabled { opacity: 0.45; cursor: default; transform: none; box-shadow: 0 4px 0 var(--gold-deep); }
+
+  .popup { position: fixed; inset: 0; background: rgba(20,10,45,0.55); backdrop-filter: blur(6px); z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0.25s; padding: 24px; }
+  .popup.show { opacity: 1; visibility: visible; pointer-events: auto; }
+  .popup-card { background: linear-gradient(165deg, var(--card), var(--ink-900)); border: 1px solid var(--card-line); border-radius: 26px; width: min(92vw, 480px); max-height: 84vh; overflow-y: auto; padding: 30px 28px 32px; transform: translateY(14px) scale(0.97); transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2); color: #fff; box-shadow: 0 30px 60px rgba(20,10,45,0.5); }
+  .popup.show .popup-card { transform: translateY(0) scale(1); }
+  .popup-back { background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 6px 10px; border-radius: 10px; margin-bottom: 10px; }
+  .popup-title { font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 23px; line-height: 1.4; margin: 0 0 26px; color: var(--gold); }
+  .tier { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 10px 12px; border-radius: 16px; transition: background 0.15s ease; }
+  .tier:hover { background: rgba(255,255,255,0.05); }
+  .tier-icon { width: 44px; height: 44px; flex-shrink: 0; }
+  .tier-text { flex: 1; }
+  .tier-rank { font-size: 11px; color: #B7ADE0; font-weight: 800; display: block; letter-spacing: 0.3px; }
+  .tier-name { font-size: 15px; font-weight: 700; display: block; margin-top: 2px; color: #fff; }
+  .reward-card { background: rgba(255,255,255,0.06); border: 1px solid var(--card-line); border-radius: 14px; padding: 10px 16px; font-size: 13px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+
+  .reveal-overlay { position: fixed; inset: 0; background: rgba(20,10,40,0.72); backdrop-filter: blur(8px); z-index: 50; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease, visibility 0.3s; }
+  .reveal-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+  .reveal-stage { display: flex; flex-direction: column; align-items: center; }
+  .giftbox-reveal { position: relative; width: 232px; height: 218px; z-index: 2; }
+  .giftbox-reveal.shaking { animation: gbShake 0.15s ease-in-out infinite; }
+  @keyframes gbShake {
+    0%, 100% { transform: rotate(0deg) translateX(0); }
+    25% { transform: rotate(-5deg) translateX(-5px); }
+    75% { transform: rotate(5deg) translateX(5px); }
+  }
+  .gb-anticipation {
+    position: absolute; left: 50%; top: 58%; width: 220px; height: 220px;
+    transform: translate(-50%, -50%) scale(0.55);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0; pointer-events: none; z-index: 0;
+  }
+  .giftbox-reveal.shaking .gb-anticipation { animation: anticipationPulse 0.55s ease-in-out infinite; }
+  @keyframes anticipationPulse {
+    0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.55); }
+    50% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.9); }
+  }
+  .gb-body {
+    position: absolute; left: 6%; right: 6%; bottom: 0; height: 62%;
+    border-radius: 14px 14px 18px 18px;
+    box-shadow: 0 22px 40px rgba(20,10,45,0.5), inset 0 3px 0 rgba(255,255,255,0.4), inset 0 -10px 18px rgba(0,0,0,0.15);
+    transition: background 0.15s ease;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .gb-ribbon-v { position: absolute; left: 50%; top: 0; bottom: 0; width: 15%; transform: translateX(-50%); background: rgba(255,255,255,0.92); }
+  .gb-ribbon-h { position: absolute; left: 0; right: 0; top: 14%; height: 20%; background: rgba(255,255,255,0.92); }
+  .gb-lid {
+    position: absolute; left: -3%; right: -3%; top: 22%; height: 22%;
+    border-radius: 12px;
+    box-shadow: 0 10px 18px rgba(20,10,45,0.35), inset 0 2px 0 rgba(255,255,255,0.45);
+    transform-origin: 50% 100%;
+    transition: transform 0.35s cubic-bezier(0.3, 1.3, 0.35, 1), opacity 0.25s ease 0.06s;
+    z-index: 3;
+  }
+  .gb-lid-ribbon { position: absolute; left: 50%; top: 0; bottom: 0; width: 15%; transform: translateX(-50%); background: rgba(255,255,255,0.92); }
+  .gb-bow { position: absolute; left: 50%; top: -13px; transform: translateX(-50%); font-size: 34px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
+  .giftbox-reveal.opened .gb-lid { transform: translateY(-58px) rotate(-38deg); opacity: 0; }
+  .gb-glow {
+    position: absolute; left: 50%; top: 30%;
+    width: 30px; height: 30px; transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0; z-index: 4; pointer-events: none;
+  }
+  .giftbox-reveal.opened .gb-glow { animation: gbGlowBurst 0.6s ease-out 0.15s forwards; }
+  @keyframes gbGlowBurst {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(7); opacity: 0; }
+  }
+
+  .gb-ticket {
+    position: absolute; left: 50%; top: 26%;
+    width: 168px;
+    transform: translate(-50%, 6px) scale(0.25);
+    opacity: 0;
+    background: #FFFCF3;
+    border-radius: 12px;
+    box-shadow: 0 18px 32px rgba(20,10,45,0.45);
+    transition: transform 0.4s cubic-bezier(0.28, 1.5, 0.35, 1) 0.16s, opacity 0.2s ease 0.16s;
+    z-index: 5;
+    overflow: hidden;
+  }
+  .giftbox-reveal.opened .gb-ticket { transform: translate(-50%, -122px) rotate(-3deg) scale(1); opacity: 1; }
+  .ticket-stripe {
+    padding: 14px 0 11px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 25px;
+    color: #fff;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .ticket-notch-line { position: relative; height: 0; border-top: 2px dashed rgba(60,40,20,0.22); margin: 0 12px; }
+  .ticket-notch-line::before, .ticket-notch-line::after {
+    content: ""; position: absolute; top: -8px; width: 16px; height: 16px; border-radius: 50%;
+    background: #2A1B54;
+  }
+  .ticket-notch-line::before { left: -20px; }
+  .ticket-notch-line::after { right: -20px; }
+  .ticket-prize {
+    padding: 14px 12px 17px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 19px;
+    color: #3A2A0A;
+    text-align: center;
+  }
+
+  .reveal-text { margin-top: 118px; text-align: center; opacity: 0; transform: translateY(8px); transition: opacity 0.35s ease, transform 0.35s ease; }
+  .reveal-text.show { opacity: 1; transform: translateY(0); }
+  .reveal-confirm {
+    padding: 14px 48px; border: none; border-radius: 999px;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
+    color: #4A2A00; font-family: 'Black Han Sans', sans-serif;
+    font-size: 15px; cursor: pointer;
+    box-shadow: 0 4px 0 var(--gold-deep), 0 14px 26px rgba(255,209,102,0.3);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .reveal-confirm:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--gold-deep), 0 18px 30px rgba(255,209,102,0.38); }
+  .reveal-confirm:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--gold-deep); }
+
+  .confetti-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 55; }
+  .confetti { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; opacity: 0.95; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: 0.2; } }
+
+  @media (max-height: 760px) {
+    .hero { padding-top: 14px; }
+    .hero-title-row { margin-bottom: 6px; }
+    .machine-wrap { height: min(58vh, 560px); }
+  }
+  @media (max-height: 620px) {
+    .machine-wrap { height: min(50vh, 460px); }
+    .hero-hint { margin-bottom: 6px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="giftBoxTpl" viewBox="0 0 44 44">
+      <rect x="5" y="19" width="34" height="19" rx="3" fill="currentColor"/>
+      <rect x="5" y="30" width="34" height="8" rx="3" fill="#000000" opacity="0.14"/>
+      <rect x="3" y="12" width="38" height="9" rx="3" fill="currentColor"/>
+      <rect x="3" y="12" width="38" height="3.5" rx="1.5" fill="#ffffff" opacity="0.35"/>
+      <rect x="18.5" y="4" width="7" height="34" fill="#ffffff" opacity="0.92"/>
+      <path d="M22 12 C14 12 10 3 15 2 C20 1 22 8 22 12 Z" fill="#ffffff" opacity="0.92"/>
+      <path d="M22 12 C30 12 34 3 29 2 C24 1 22 8 22 12 Z" fill="#ffffff" opacity="0.92"/>
+      <circle cx="22" cy="11.5" r="2.6" fill="#FFD166"/>
+      <rect x="5" y="19" width="34" height="19" rx="3" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1.2"/>
+      <rect x="3" y="12" width="38" height="9" rx="3" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1.2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<section class="hero">
+  <div class="bg-decor" aria-hidden="true">
+    <span class="deco-circle c1"></span>
+    <span class="deco-circle c2"></span>
+    <span class="deco-circle c3"></span>
+    <span class="deco-circle c4"></span>
+    <span class="deco-circle c5"></span>
+    <span class="deco-circle c6"></span>
+  </div>
+  <svg class="grain" xmlns="http://www.w3.org/2000/svg">
+    <filter id="grainFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter>
+    <rect width="100%" height="100%" filter="url(#grainFilter)"/>
+  </svg>
+
+  <div class="top-bar">
+    <button class="list-btn" id="listBtn">🎁 상품 목록 보기</button>
+  </div>
+
+  <p class="hero-sub"> 이벤트 참여하고 행운의 선물을 받아가세요!</p>
+  <div class="hero-title-row">
+    <span class="spark left">🎉</span>
+    <span class="pink">행운의 </span><span class="purple">선물상자 뽑기</span>
+    <span class="spark right">✨</span>
+  </div>
+
+  <div class="machine-wrap" id="machineWrap">
+    <svg viewBox="0 30 320 370" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="cabinet" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#D3F5EC"/>
+          <stop offset="55%" stop-color="#8FE0CD"/>
+          <stop offset="100%" stop-color="#5FC2AC"/>
+        </linearGradient>
+        <linearGradient id="cabinetTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#F3FFFB"/>
+          <stop offset="100%" stop-color="#B8F0E1"/>
+        </linearGradient>
+        <linearGradient id="btnBezel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFFDF5"/>
+          <stop offset="100%" stop-color="#E9D9A8"/>
+        </linearGradient>
+        <radialGradient id="triggerCore" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#FF7CB8"/>
+          <stop offset="100%" stop-color="#E8267F"/>
+        </radialGradient>
+        <linearGradient id="metalRod" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#F3D888"/>
+          <stop offset="50%" stop-color="#D2B34A"/>
+          <stop offset="100%" stop-color="#B8942F"/>
+        </linearGradient>
+      </defs>
+
+      <ellipse cx="160" cy="384" rx="118" ry="14" fill="rgba(30,50,70,0.18)"/>
+
+      <!-- cabinet body -->
+      <path d="M44 92 C44 60 70 42 160 42 C250 42 276 60 276 92 L276 300 C276 322 258 336 232 336 L88 336 C62 336 44 322 44 300 Z" fill="url(#cabinet)"/>
+      <path d="M44 92 C44 60 70 42 160 42 C250 42 276 60 276 92 L276 118 L44 118 Z" fill="url(#cabinetTop)"/>
+      <path d="M46 94 C46 64 71 44 160 44" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+
+      <!-- glass window -->
+      <rect x="66" y="96" width="188" height="176" rx="14" fill="#F3FFFC" opacity="0.45" stroke="#ffffff" stroke-width="3"/>
+      <ellipse cx="150" cy="252" rx="70" ry="14" fill="rgba(20,60,50,0.14)"/>
+      <path d="M78 100 L118 100 L84 268 L70 268 Z" fill="#ffffff" opacity="0.16"/>
+
+      <!-- prize pile (uniform size, translucent glass capsules) -->
+      <g>
+        <g transform="translate(96,232) scale(0.98)" style="color:#FF7AAE"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+        <g transform="translate(138,244) scale(0.98)" style="color:#FFC531"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+        <g transform="translate(182,236) scale(0.98)" style="color:#5B9DFF"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+        <g transform="translate(118,198) scale(0.98)" style="color:#B98CFF"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+        <g transform="translate(160,196) scale(0.98)" style="color:#4ED9B0"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+        <g transform="translate(200,200) scale(0.98)" style="color:#FF7AAE"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+      </g>
+
+      <!-- claw mechanism -->
+      <g class="claw-group" id="clawGroup">
+        <rect x="152" y="108" width="16" height="46" fill="url(#metalRod)"/>
+        <circle cx="160" cy="108" r="10" fill="url(#btnBezel)" stroke="#C9A94F" stroke-width="1.5"/>
+        <path class="claw-prong left" d="M160 150 L142 150 C132 150 126 162 132 172 L146 172 C144 164 150 158 160 158 Z" fill="url(#metalRod)"/>
+        <path class="claw-prong right" d="M160 150 L178 150 C188 150 194 162 188 172 L174 172 C176 164 170 158 160 158 Z" fill="url(#metalRod)"/>
+        <g class="prize-grabbed" transform="translate(160,166) scale(0.9)" style="color:#FFC531"><use href="#giftBoxTpl" width="44" height="44" x="-22" y="-22"/></g>
+      </g>
+
+      <!-- chute -->
+      <rect x="130" y="272" width="60" height="20" rx="6" fill="#2E7A67" opacity="0.55"/>
+      <rect x="130" y="272" width="60" height="6" rx="3" fill="#1E5A4B" opacity="0.4"/>
+
+      <!-- control panel -->
+      <rect x="70" y="300" width="180" height="30" rx="12" fill="#4FBFA8"/>
+      <rect x="70" y="300" width="180" height="12" rx="8" fill="#ffffff" opacity="0.18"/>
+      <g id="triggerBtn" class="trigger-btn">
+        <circle class="trigger-glow" cx="108" cy="315" r="16" fill="#FFD166" opacity="0.55"/>
+        <circle cx="108" cy="315" r="12.5" fill="url(#btnBezel)"/>
+        <circle cx="108" cy="315" r="8.5" fill="url(#triggerCore)"/>
+        <ellipse cx="105" cy="311" rx="3" ry="1.8" fill="#ffffff" opacity="0.6"/>
+      </g>
+      <circle cx="146" cy="315" r="10" fill="url(#btnBezel)"/>
+      <rect x="176" y="308" width="10" height="26" rx="4" fill="#2E7A67"/>
+      <circle cx="181" cy="308" r="9" fill="url(#btnBezel)"/>
+
+      <!-- feet -->
+      <rect x="78" y="336" width="22" height="30" rx="6" fill="#4FBFA8"/>
+      <rect x="220" y="336" width="22" height="30" rx="6" fill="#4FBFA8"/>
+
+      <!-- dispensed capsule — drawn last so it's always on top as it drops into the chute -->
+      <g transform="translate(160,200)">
+        <g class="drop-box" id="dropBox" style="color:#FFC531"><use href="#giftBoxTpl" width="52" height="52" x="-26" y="-26"/></g>
+      </g>
+    </svg>
+  </div>
+
+  <p class="hero-hint" id="heroHint">'시작하기'를 눌러 상자 하나를 뽑아보세요 <br>상품은 일정한 비율에 따라 부여됩니다.<br> </p>
+  <button class="start-btn" id="startBtn">시작하기</button>
+  <p class="done-note" id="doneNote">오늘의 뽑기가 완료되었어요</p>
+</section>
+
+<div class="popup" id="popup">
+  <div class="popup-card">
+    <button class="popup-back" id="popupBack">←</button>
+    <p class="popup-title">상품 목록</p>
+    <div id="tierList"></div>
+  </div>
+</div>
+
+<div class="reveal-overlay" id="revealOverlay">
+  <div class="reveal-stage">
+    <div class="giftbox-reveal" id="giftboxReveal">
+      <div class="gb-anticipation"></div>
+      <div class="gb-glow"></div>
+      <div class="gb-ticket" id="gbTicket">
+        <div class="ticket-stripe" id="ticketStripe">1등</div>
+        <div class="ticket-notch-line"></div>
+        <div class="ticket-prize" id="ticketPrize">경품1</div>
+      </div>
+      <div class="gb-lid" id="gbLid">
+        <div class="gb-lid-ribbon"></div>
+        <span class="gb-bow">🎀</span>
+      </div>
+      <div class="gb-body" id="gbBody">
+        <div class="gb-ribbon-v"></div>
+        <div class="gb-ribbon-h"></div>
+      </div>
+    </div>
+    <div class="reveal-text" id="revealText">
+      <button class="reveal-confirm" id="revealConfirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const tiers = [
+    { rank: 1, label: '1등', name: '골드 상자', color: '#FFD966', prize: '롯데백화점 20만원 상품권', weight: 5 },
+    { rank: 2, label: '2등', name: '퍼플 상자', color: '#C9AFFF', prize: '신세계 10만원권', weight: 10 },
+    { rank: 3, label: '3등', name: '블루 상자', color: '#7EB6FF', prize: '배달의민족 5만원 상품권', weight: 20 },
+    { rank: 4, label: '4등', name: '민트 상자', color: '#6EE7D0', prize: '치킨 세트', weight: 25 },
+    { rank: 5, label: '5등', name: '핑크 상자', color: '#FFA8CC', prize: '스타벅스 커피쿠폰', weight: 40 }
+  ];
+
+  function weightedPick() {
+    const total = tiers.reduce((s, t) => s + t.weight, 0);
+    let r = Math.random() * total;
+    for (const t of tiers) {
+      if (r < t.weight) return t;
+      r -= t.weight;
+    }
+    return tiers[tiers.length - 1];
+  }
+
+  function launchConfetti() {
+    const colors = tiers.map(t => t.color);
+    const layer = document.createElement('div');
+    layer.className = 'confetti-layer';
+    document.body.appendChild(layer);
+    for (let i = 0; i < 80; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      const isCircle = Math.random() < 0.35;
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.width = (isCircle ? 9 : 7 + Math.random() * 3) + 'px';
+      piece.style.height = (isCircle ? 9 : 12 + Math.random() * 6) + 'px';
+      piece.style.borderRadius = isCircle ? '50%' : '2px';
+      piece.style.animationDuration = (2.2 + Math.random() * 1.6) + 's';
+      piece.style.animationDelay = (Math.random() * 0.35) + 's';
+      layer.appendChild(piece);
+    }
+    setTimeout(() => layer.remove(), 4200);
+  }
+
+  let used = false;
+  let activeTier = null;
+  const machineWrap = document.getElementById('machineWrap');
+  const clawGroup = document.getElementById('clawGroup');
+  const dropBox = document.getElementById('dropBox');
+  const heroHint = document.getElementById('heroHint');
+  const startBtn = document.getElementById('startBtn');
+
+  startBtn.addEventListener('click', () => {
+    if (used) return;
+    used = true;
+    activeTier = weightedPick();
+
+    machineWrap.classList.add('used');
+    heroHint.classList.add('faded');
+    startBtn.disabled = true;
+    startBtn.textContent = '뽑는 중...';
+
+    // claw sequence: descend -> grip -> rise -> release into chute
+    clawGroup.classList.add('descend');
+    setTimeout(() => clawGroup.classList.add('grip'), 700);
+    setTimeout(() => clawGroup.classList.remove('descend'), 1100);
+    setTimeout(() => clawGroup.classList.add('rise'), 1120);
+    setTimeout(() => {
+      clawGroup.classList.remove('grip');
+      dropBox.classList.add('falling');
+    }, 1750);
+    setTimeout(() => {
+      clawGroup.classList.remove('rise');
+    }, 1800);
+
+    setTimeout(() => {
+      openRevealOverlay();
+    }, 2650);
+  });
+
+  const revealOverlay = document.getElementById('revealOverlay');
+  const giftboxReveal = document.getElementById('giftboxReveal');
+  const gbLid = document.getElementById('gbLid');
+  const gbBody = document.getElementById('gbBody');
+  const revealText = document.getElementById('revealText');
+  const ticketStripe = document.getElementById('ticketStripe');
+  const ticketPrize = document.getElementById('ticketPrize');
+
+  function openRevealOverlay() {
+    gbBody.style.background = 'linear-gradient(160deg, #E4E6F0, #B9BDD6)';
+    gbLid.style.background = 'linear-gradient(160deg, #EDEFF6, #C7CBDE)';
+    ticketStripe.style.background = '#B9BDD6';
+    ticketStripe.textContent = '?';
+    ticketPrize.textContent = '';
+    revealText.classList.remove('show');
+    giftboxReveal.classList.remove('opened');
+
+    revealOverlay.classList.add('show');
+    requestAnimationFrame(() => giftboxReveal.classList.add('shaking'));
+
+    // extra suspense: let it shake for a while before the reveal
+    setTimeout(() => {
+      giftboxReveal.classList.remove('shaking');
+      gbBody.style.background = `linear-gradient(165deg, #ffffffcc, ${activeTier.color})`;
+      gbLid.style.background = `linear-gradient(165deg, #ffffffdd, ${activeTier.color})`;
+      ticketStripe.style.background = activeTier.color;
+      ticketStripe.textContent = activeTier.label;
+      ticketPrize.textContent = activeTier.prize;
+      giftboxReveal.classList.add('opened');
+      launchConfetti();
+    }, 700);
+
+    setTimeout(() => {
+      revealText.classList.add('show');
+    }, 1500);
+  }
+
+  document.getElementById('revealConfirm').addEventListener('click', () => {
+    revealOverlay.classList.remove('show');
+    document.getElementById('doneNote').classList.add('show');
+  });
+
+  const tierListEl = document.getElementById('tierList');
+  tiers.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'tier';
+    row.innerHTML = `
+      <div class="tier-icon"><svg viewBox="0 0 44 44" width="100%" height="100%" style="color:${t.color}"><use href="#giftBoxTpl" width="44" height="44"/></svg></div>
+      <div class="tier-text">
+        <span class="tier-rank">${t.label}</span>
+        <span class="tier-name">${t.name}</span>
+      </div>
+      <div class="reward-card">${t.prize}</div>
+    `;
+    tierListEl.appendChild(row);
+  });
+  document.getElementById('listBtn').addEventListener('click', () => {
+    document.getElementById('popup').classList.add('show');
+  });
+  document.getElementById('popupBack').addEventListener('click', () => {
+    document.getElementById('popup').classList.remove('show');
+  });
+  document.getElementById('popup').addEventListener('click', (e) => {
+    if (e.target.id === 'popup') document.getElementById('popup').classList.remove('show');
+  });
+</script>
+</body>
+</html>
