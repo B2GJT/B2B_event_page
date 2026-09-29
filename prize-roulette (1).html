@@ -558,22 +558,25 @@
 </div>
 
 <script>
-  const tiers = [
-    { rank: 1, label: '1등', name: '골드 상자', color: '#FFD966', prize: '롯데백화점 20만원 상품권', weight: 5 },
-    { rank: 2, label: '2등', name: '퍼플 상자', color: '#C9AFFF', prize: '신세계 10만원권', weight: 10 },
-    { rank: 3, label: '3등', name: '블루 상자', color: '#7EB6FF', prize: '배달의민족 5만원 상품권', weight: 20 },
-    { rank: 4, label: '4등', name: '민트 상자', color: '#6EE7D0', prize: '치킨 세트', weight: 25 },
-    { rank: 5, label: '5등', name: '핑크 상자', color: '#FFA8CC', prize: '스타벅스 커피쿠폰', weight: 40 }
+  // 서버(상품목록 시트)에서 못 불러왔을 때 쓰일 기본값 — 로드되면 아래 loadPrizes()가 덮어씀
+  let tiers = [
+    { rank: 1, label: '1등', name: '골드 상자', color: '#FFD966', prize: '상품 준비 중', weight: 5 },
+    { rank: 2, label: '2등', name: '퍼플 상자', color: '#C9AFFF', prize: '상품 준비 중', weight: 10 },
+    { rank: 3, label: '3등', name: '블루 상자', color: '#7EB6FF', prize: '상품 준비 중', weight: 20 },
+    { rank: 4, label: '4등', name: '민트 상자', color: '#6EE7D0', prize: '상품 준비 중', weight: 25 },
+    { rank: 5, label: '5등', name: '핑크 상자', color: '#FFA8CC', prize: '상품 준비 중', weight: 40 }
   ];
 
-  function weightedPick() {
-    const total = tiers.reduce((s, t) => s + t.weight, 0);
-    let r = Math.random() * total;
-    for (const t of tiers) {
-      if (r < t.weight) return t;
-      r -= t.weight;
+  // 상품 목록 시트에서 실제 상품/색상을 불러와 팝업에 반영 (당첨은 항상 서버가 결정하므로,
+  // 이 목록은 화면 표시용일 뿐이고 가중치/재고 계산은 앱스 스크립트 쪽에서 처리된다)
+  async function loadPrizes() {
+    const result = await jsonpRequest({ action: 'prizes' }, 10000);
+    if (result.ok && Array.isArray(result.prizes) && result.prizes.length > 0) {
+      tiers = result.prizes.map((p) => ({
+        label: p.rank, name: p.name, prize: p.prize, color: p.color || '#C9AFFF', weight: p.weight
+      }));
+      renderTierList();
     }
-    return tiers[tiers.length - 1];
   }
 
   function launchConfetti() {
@@ -792,9 +795,11 @@
     }
   });
 
-  // 서버(Apps Script)에 뽑기 결과를 기록하고, 이미 참여한 key인지 확인 (JSONP GET, 응답 읽기 가능)
-  async function recordDraw(key, tier) {
-    return jsonpRequest({ action: 'draw', key, rank: tier.label, prize: tier.prize });
+  // 서버(Apps Script)가 재고를 확인하며 상품을 직접 결정하고 기록한다 (JSONP GET, 응답 읽기 가능)
+  async function recordDraw(key) {
+    const res = await jsonpRequest({ action: 'draw', key });
+    console.log('draw response (디버그용):', res);
+    return res;
   }
 
   startBtn.addEventListener('click', async () => {
@@ -808,8 +813,7 @@
     statusMsg.classList.remove('show');
     showLoading('확인하고 있어요. 잠시만 기다려주세요...');
 
-    const pickedTier = weightedPick();
-    const result = await recordDraw(participantKey, pickedTier);
+    const result = await recordDraw(participantKey);
     hideLoading();
 
     if (!result.ok) {
@@ -818,21 +822,23 @@
         if (result.rank && result.prize) {
           // 이미 뽑기가 서버에는 기록돼 있었던 경우 (예: 응답 지연으로 놓쳤던 경우) -> 그 결과를 그대로 보여준다
           used = true;
-          activeTier = { label: result.rank, prize: result.prize, color: '#C9AFFF' };
+          activeTier = { label: result.rank, prize: result.prize, color: result.color || '#C9AFFF' };
           machineWrap.classList.add('used');
           heroHint.classList.add('faded');
           openRevealOverlay(true);
         } else {
           showStatus('이미 참여하셨어요. 참여는 1회만 가능합니다.');
         }
+      } else if (result.reason === 'out_of_stock') {
+        showStatus('죄송해요, 모든 상품이 소진됐어요.');
       } else {
-        showStatus('연결에 문제가 있어요. 잠시 후 다시 시도해주세요.');
+        showStatus('연결에 문제가 있어요. 잠시 후 다시 시도해주세요. (' + (result.reason || 'unknown') + ')');
       }
       return;
     }
 
     used = true;
-    activeTier = pickedTier;
+    activeTier = { label: result.rank, prize: result.prize, color: result.color || '#C9AFFF' };
 
     machineWrap.classList.add('used');
     heroHint.classList.add('faded');
@@ -902,19 +908,24 @@
   });
 
   const tierListEl = document.getElementById('tierList');
-  tiers.forEach((t, i) => {
-    const row = document.createElement('div');
-    row.className = 'tier';
-    row.innerHTML = `
-      <div class="tier-icon"><svg viewBox="0 0 44 44" width="100%" height="100%" style="color:${t.color}"><use href="#giftBoxTpl" width="44" height="44"/></svg></div>
-      <div class="tier-text">
-        <span class="tier-rank">${t.label}</span>
-        <span class="tier-name">${t.name}</span>
-      </div>
-      <div class="reward-card">${t.prize}</div>
-    `;
-    tierListEl.appendChild(row);
-  });
+  function renderTierList() {
+    tierListEl.innerHTML = '';
+    tiers.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'tier';
+      row.innerHTML = `
+        <div class="tier-icon"><svg viewBox="0 0 44 44" width="100%" height="100%" style="color:${t.color}"><use href="#giftBoxTpl" width="44" height="44"/></svg></div>
+        <div class="tier-text">
+          <span class="tier-rank">${t.label}</span>
+          <span class="tier-name">${t.name}</span>
+        </div>
+        <div class="reward-card">${t.prize}</div>
+      `;
+      tierListEl.appendChild(row);
+    });
+  }
+  renderTierList();
+  loadPrizes();
   document.getElementById('listBtn').addEventListener('click', () => {
     document.getElementById('popup').classList.add('show');
   });
