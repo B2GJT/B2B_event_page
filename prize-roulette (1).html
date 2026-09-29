@@ -334,6 +334,15 @@
 
   .reveal-text { margin-top: 118px; text-align: center; opacity: 0; transform: translateY(8px); transition: opacity 0.35s ease, transform 0.35s ease; }
   .reveal-text.show { opacity: 1; transform: translateY(0); }
+  .reveal-message {
+    white-space: pre-line; color: #2A1B54; font-size: 14.5px; font-weight: 700;
+    line-height: 1.7; margin: 0 0 20px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 14px 22px;
+    box-shadow: 0 10px 24px rgba(20,10,45,0.35);
+  }
+  .reveal-message strong { color: #A8580F; font-family: 'Black Han Sans', sans-serif; font-size: 18px; font-weight: 400; }
   .reveal-confirm {
     padding: 14px 48px; border: none; border-radius: 999px;
     background: linear-gradient(160deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
@@ -519,9 +528,9 @@
     <button class="survey-submit-btn" id="surveySubmitBtn">제출하고 뽑기 참여하기</button>
   </div>
 
-  <button class="start-btn" id="startBtn" style="display:none;">시작하기</button>
+  <button class="start-btn" id="startBtn" style="display:none;">박스 뽑기!</button>
   <p class="status-msg" id="statusMsg"></p>
-  <p class="done-note" id="doneNote">오늘의 뽑기가 완료되었어요</p>
+  <p class="done-note" id="doneNote">뽑기가 완료되었어요</p>
 </section>
 
 <div class="popup" id="popup">
@@ -552,6 +561,7 @@
       </div>
     </div>
     <div class="reveal-text" id="revealText">
+      <p class="reveal-message" id="revealMessage"></p>
       <button class="reveal-confirm" id="revealConfirm">확인</button>
     </div>
   </div>
@@ -939,8 +949,23 @@
   const gbLid = document.getElementById('gbLid');
   const gbBody = document.getElementById('gbBody');
   const revealText = document.getElementById('revealText');
+  const revealMessage = document.getElementById('revealMessage');
   const ticketStripe = document.getElementById('ticketStripe');
   const ticketPrize = document.getElementById('ticketPrize');
+
+  // 상품명 마지막 글자의 받침 유무에 따라 '을/를' 조사를 고른다 (한글이 아니면 '를' 사용)
+  function withParticle(word, withBatchim, noBatchim) {
+    const lastChar = (word || '').trim().slice(-1);
+    const code = lastChar.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      return (code - 0xAC00) % 28 !== 0 ? withBatchim : noBatchim;
+    }
+    return noBatchim;
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
 
   function openRevealOverlay(fast) {
     gbBody.style.background = 'linear-gradient(160deg, #E4E6F0, #B9BDD6)';
@@ -948,6 +973,7 @@
     ticketStripe.style.background = '#B9BDD6';
     ticketStripe.textContent = '?';
     ticketPrize.textContent = '';
+    revealMessage.innerHTML = '';
     revealText.classList.remove('show');
     giftboxReveal.classList.remove('opened');
 
@@ -965,6 +991,8 @@
       ticketStripe.style.background = activeTier.color;
       ticketStripe.textContent = activeTier.label;
       ticketPrize.textContent = activeTier.prize;
+      const particle = withParticle(activeTier.prize, '을', '를');
+      revealMessage.innerHTML = `<strong>${escapeHtml(activeTier.prize)}</strong>${particle} 뽑았어요!\n입력하신 번호로 다음달 내에 발송 예정입니다.`;
       giftboxReveal.classList.add('opened');
       launchConfetti();
     }, openDelay);
