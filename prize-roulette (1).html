@@ -68,7 +68,7 @@
   }
 
 
-  .top-bar { position: absolute; top: 18px; right: 16px; z-index: 6; }
+  .top-bar { position: absolute; top: 18px; right: 16px; z-index: 6; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
   .list-btn {
     display: flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.6);
@@ -81,6 +81,38 @@
   }
   .list-btn:hover { background: rgba(255,255,255,0.85); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(90,50,150,0.2); }
   .list-btn:active { transform: translateY(0) scale(0.96); }
+
+  .notice-panel {
+    position: fixed; left: 12px; top: 50%; transform: translateY(-50%);
+    z-index: 10; width: min(80vw, 300px);
+    background: linear-gradient(165deg, var(--card), var(--ink-900));
+    border: 1px solid var(--card-line);
+    border-radius: 20px;
+    padding: 20px 22px 22px 24px;
+    box-shadow: 0 20px 44px rgba(20,10,45,0.4);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .notice-panel::before {
+    content: ""; position: absolute; left: 10px; top: 20px; bottom: 20px; width: 4px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--gold-light), var(--gold-deep));
+  }
+  .notice-panel.hidden { opacity: 0; transform: translateY(-50%) translateX(-16px); pointer-events: none; }
+  .notice-panel-title {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 0 0 14px; color: var(--gold); font-size: 14.5px; font-weight: 900;
+  }
+  .notice-panel-close {
+    flex-shrink: 0; width: 22px; height: 22px; border: none; border-radius: 50%;
+    background: rgba(255,255,255,0.12); color: #fff; font-size: 12px; font-weight: 900; line-height: 1;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .notice-panel-close:hover { background: rgba(255,255,255,0.26); }
+
+  .notice-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; }
+  .notice-list li { position: relative; padding-left: 17px; font-size: 12.5px; line-height: 1.7; color: #EDEAFB; }
+  .notice-list li::before { content: "•"; position: absolute; left: 1px; top: 0; color: var(--gold); font-weight: 900; }
 
   .hero-sub {
     color: #A82BC4; font-size: 13px; font-weight: 800; letter-spacing: 0.4px;
@@ -410,6 +442,18 @@
 
   <div class="top-bar">
     <button class="list-btn" id="listBtn">🎁 상품 목록 보기</button>
+  </div>
+
+  <div class="notice-panel" id="noticePanel">
+    <p class="notice-panel-title">
+      <span>⚠️ 유의사항</span>
+      <button class="notice-panel-close" id="noticePanelClose" aria-label="유의사항 닫기">✕</button>
+    </p>
+    <ul class="notice-list">
+      <li>전화번호를 정확히 입력해주세요. 잘못 입력하신 경우 리워드 발송이 불가능합니다.</li>
+      <li>이벤트 참여는 모든 참여 조건을 충족한 경우에만 인정되며, 이후 데이터 확인 과정에서 정보가 일치하지 않을 경우 당첨이 취소될 수 있습니다.</li>
+      <li>데이터 연동에 다소 시간이 걸릴 수 있습니다. 로딩 중에는 화면을 벗어나지 마시고 잠시만 기다려주세요.</li>
+    </ul>
   </div>
 
   <p class="hero-sub"> 이벤트 참여하고 행운의 선물을 받아가세요!</p>
@@ -1026,14 +1070,20 @@
   }
   renderTierList();
   loadPrizes();
-  document.getElementById('listBtn').addEventListener('click', () => {
-    document.getElementById('popup').classList.add('show');
-  });
-  document.getElementById('popupBack').addEventListener('click', () => {
-    document.getElementById('popup').classList.remove('show');
-  });
-  document.getElementById('popup').addEventListener('click', (e) => {
-    if (e.target.id === 'popup') document.getElementById('popup').classList.remove('show');
+
+  function setupPopup(btnId, popupId, backId) {
+    const popupEl = document.getElementById(popupId);
+    document.getElementById(btnId).addEventListener('click', () => popupEl.classList.add('show'));
+    document.getElementById(backId).addEventListener('click', () => popupEl.classList.remove('show'));
+    popupEl.addEventListener('click', (e) => { if (e.target === popupEl) popupEl.classList.remove('show'); });
+    return popupEl;
+  }
+  setupPopup('listBtn', 'popup', 'popupBack');
+
+  // 유의사항은 팝업으로 가리지 않고 화면 왼쪽에 반투명 패널로 기본 노출한다.
+  // X를 누르면 그 세션 동안은 다시 뜨지 않도록 완전히 숨긴다.
+  document.getElementById('noticePanelClose').addEventListener('click', () => {
+    document.getElementById('noticePanel').classList.add('hidden');
   });
 </script>
 </body>
