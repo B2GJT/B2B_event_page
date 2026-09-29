@@ -506,7 +506,7 @@
     </div>
     <div class="survey-field">
       <label for="surveyPhone">연락처</label>
-      <input type="tel" id="surveyPhone" placeholder="010-0000-0000">
+      <input type="tel" id="surveyPhone" placeholder="010-0000-0000" inputmode="numeric" pattern="[0-9\-]*" maxlength="13">
     </div>
     <div class="survey-field">
       <label>사진 첨부</label>
@@ -674,6 +674,26 @@
     });
   }
 
+  // 연락처는 숫자만 입력되도록 강제하고, 입력 중 자동으로 하이픈을 넣어준다.
+  function formatPhoneNumber(value) {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length < 4) return digits;
+    if (digits.length < 8) return digits.slice(0, 3) + '-' + digits.slice(3);
+    if (digits.length < 11) return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+    return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  }
+  surveyPhone.addEventListener('input', () => {
+    surveyPhone.value = formatPhoneNumber(surveyPhone.value);
+  });
+  surveyPhone.addEventListener('keypress', (e) => {
+    if (!/[0-9]/.test(e.key)) e.preventDefault();
+  });
+  surveyPhone.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    surveyPhone.value = formatPhoneNumber(surveyPhone.value + text);
+  });
+
   let compressedPhotoData = null;
   surveyPhoto.addEventListener('change', async () => {
     const file = surveyPhoto.files[0];
@@ -699,7 +719,7 @@
 
   // JSONP 방식 GET 요청: <script> 태그로 불러오기 때문에 CORS 제약을 받지 않는다.
   // 응답을 읽어야 하는 가벼운 요청(check, draw)에 사용.
-  function jsonpRequest(params, timeoutMs = 30000) {
+  function rawJsonpRequest(params, timeoutMs) {
     return new Promise((resolve) => {
       const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
       const script = document.createElement('script');
@@ -741,11 +761,59 @@
     });
   }
 
+  // Apps Script는 콜드스타트 등으로 응답이 늦게 오는 경우가 많아, 순수 네트워크/타임아웃 실패
+  // (reason: 'network')일 때만 백오프를 두고 자동 재시도한다. 서버가 명확히 응답한 결과
+  // (duplicate, out_of_stock 등)는 재시도하지 않고 그대로 반환한다.
+  // opts: { timeoutMs, retries, onRetry(attempt, maxRetries) } 또는 숫자(timeoutMs, 하위호환용)
+  async function jsonpRequest(params, opts = {}) {
+    const { timeoutMs = 20000, retries = 2, onRetry } = typeof opts === 'number' ? { timeoutMs: opts } : opts;
+    let lastResult;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      lastResult = await rawJsonpRequest(params, timeoutMs);
+      if (lastResult.ok || lastResult.reason !== 'network') return lastResult;
+      if (attempt < retries) {
+        if (onRetry) onRetry(attempt + 1, retries);
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    return lastResult;
+  }
+
+  // POST 제출(no-cors)도 abort 타임아웃 + 재시도를 둔다. no-cors라 성공 여부를 응답으로
+  // 알 수 없으므로, 실제 저장 여부는 이후 verify 호출로 별도 확인한다.
+  async function postSubmit(payload, timeoutMs = 20000, retries = 1) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        await fetch(SHEET_WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        return true;
+      } catch (err) {
+        clearTimeout(timer);
+        if (attempt === retries) return false;
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    return false;
+  }
+
   surveySubmitBtn.addEventListener('click', async () => {
     const name = surveyName.value.trim();
     const phone = surveyPhone.value.trim();
-    if (!name || !phone) {
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (!name || !phoneDigits) {
       showStatus('이름과 연락처를 입력해주세요');
+      return;
+    }
+    if (phoneDigits.length < 9 || phoneDigits.length > 11) {
+      showStatus('연락처를 숫자로 정확히 입력해주세요 (예: 010-1234-5678)');
       return;
     }
     if (!compressedPhotoData) {
@@ -759,45 +827,49 @@
 
     // 중복 참여 제한 없음 -> 매번 새 key로 바로 제출 (사전 확인 왕복 생략, 더 빠름)
     const newKey = generateKey();
-    try {
-      await fetch(SHEET_WEBHOOK_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'submit', key: newKey, name, phone, photoBase64: compressedPhotoData })
-      });
+    const posted = await postSubmit({ action: 'submit', key: newKey, name, phone, photoBase64: compressedPhotoData });
 
-      // no-cors라 응답을 직접 읽을 수 없으므로, 이 key로 실제 행이 생겼는지 재확인한다.
-      showLoading('저장 확인 중이에요. 잠시만 기다려주세요...');
-      let verified = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const verifyResult = await jsonpRequest({ action: 'verify', key: newKey });
-        if (verifyResult.ok) {
-          verified = true;
-          break;
-        }
-      }
-
-      hideLoading();
-      if (!verified) {
-        showStatus('저장이 확인되지 않았어요. 다시 제출해주세요. (계속되면 관리자에게 문의)');
-        surveySubmitBtn.disabled = false;
-        return;
-      }
-
-      participantKey = newKey;
-      revealStartBtn();
-    } catch (err) {
+    if (!posted) {
       hideLoading();
       showStatus('연결에 문제가 있어요. 잠시 후 다시 시도해주세요.');
       surveySubmitBtn.disabled = false;
+      return;
     }
+
+    // no-cors라 응답을 직접 읽을 수 없으므로, 이 key로 실제 행이 생겼는지 재확인한다.
+    // Apps Script 응답 지연을 감안해 백오프를 두고 여러 번 재확인한다.
+    let verified = false;
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      showLoading(`저장 확인 중이에요 (${attempt + 1}/${maxAttempts})...`);
+      await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+      const verifyResult = await jsonpRequest({ action: 'verify', key: newKey }, { timeoutMs: 15000, retries: 1 });
+      if (verifyResult.ok) {
+        verified = true;
+        break;
+      }
+    }
+
+    hideLoading();
+    if (!verified) {
+      showStatus('저장이 확인되지 않았어요. 다시 제출해주세요. (계속되면 관리자에게 문의)');
+      surveySubmitBtn.disabled = false;
+      return;
+    }
+
+    participantKey = newKey;
+    revealStartBtn();
   });
 
   // 서버(Apps Script)가 재고를 확인하며 상품을 직접 결정하고 기록한다 (JSONP GET, 응답 읽기 가능)
+  // 네트워크/타임아웃 실패 시 자동 재시도한다 (서버가 이미 당첨을 기록했더라도, 재시도는
+  // 'duplicate' 응답과 함께 당첨 결과를 그대로 돌려주므로 안전하다).
   async function recordDraw(key) {
-    const res = await jsonpRequest({ action: 'draw', key });
+    const res = await jsonpRequest({ action: 'draw', key }, {
+      timeoutMs: 20000,
+      retries: 3,
+      onRetry: (attempt, maxRetries) => showLoading(`응답이 늦어지고 있어요. 재시도 중이에요 (${attempt}/${maxRetries})...`)
+    });
     console.log('draw response (디버그용):', res);
     return res;
   }
